@@ -11,14 +11,14 @@ AVL;
 
 /* Cuenta el número de nodos en el árbol */
 int cuenta_nodos(AVL *p) {
-	if(p == NULL)
+	if(!p)
 		return(0);
 	return(cuenta_nodos(p->izq) + 1 + cuenta_nodos(p->der)); 
 }
 
 /* Borra todo el árbol AVL*/
 void borrar_AVL(AVL *p) {
-	if(p != NULL) {
+	if(p) {
 		borrar_AVL(p->izq);
 		borrar_AVL(p->der);
 		free(p);
@@ -27,8 +27,8 @@ void borrar_AVL(AVL *p) {
 
 /* Busca un dato en el árbol*/
 AVL *buscar(int dato, AVL *p) {
-	if(p == NULL) 
-		return(NULL);
+	if(!p) 
+		return p;
 	if(dato < p->dato) 
 		return(buscar(dato, p->izq)); 
 	else if(dato > p -> dato) 
@@ -39,10 +39,17 @@ AVL *buscar(int dato, AVL *p) {
 
 /* Calcula la altura del árbol (factor de equilibrio)*/
 int fe(AVL *p){
-	if(p == NULL) 
+	if(!p) 
 		return(0); 
 	else 
 		return p->fe; 
+}
+
+/*Devuelve el factor de equilibrio*/
+int getBalance(AVL *p) {
+	if(!p)
+		return 0;
+	return fe(p->izq) - fe(p->der);
 }
 
 /* Rotación simple a la izquierda*/
@@ -52,7 +59,7 @@ AVL *rot_izq(AVL *p) {
 	p->izq = q->der;
 	q->der = p;
 	p->fe = max(fe(p->izq), fe(p->der)) + 1;
-	q->fe = max(fe(q->izq), p->fe) + 1;
+	q->fe = max(fe(q->izq), fe(q->der)) + 1;
 	return q; /* Nueva Raíz */ 
 }
 
@@ -63,7 +70,7 @@ AVL *rot_der(AVL *q){
 	q->der = p->izq;
 	p->izq = q;
 	q->fe = max(fe(q->izq),fe(q->der)) + 1;
-	p->fe = max(fe(p->der),q->fe) + 1;
+	p->fe = max(fe(p->izq),fe(p->der)) + 1;
 	return p; /* Nueva raíz*/
 }
 
@@ -79,36 +86,34 @@ AVL *rot_dob_der(AVL *q) {
 	return rot_der(q);
 }
 
-
 /* Inserta un dato en el árbol p*/
 AVL *insertar(int dato, AVL *p) {
-	if(p == NULL) {
+	if(!p) {
 		p = (AVL *)malloc(sizeof(AVL));
 		p->dato = dato;
-		p->fe = 0;
+		p->fe = 1;
 		p->izq = NULL;
-		p->der = NULL; 
+		p->der = NULL;
+		return p;
 	}
-	else if(dato < p->dato) {
-		p->izq = insertar(dato,p->izq);
-		if(fe(p->izq) - fe(p->der) == 2) 
-			if(dato < p->izq->dato)
-				p = rot_izq(p);
-		else 
-			p = rot_dob_izq(p);
-	}
-	else if(dato > p->dato) {
+	if(dato < p->dato) 
+		p->izq = insertar(dato, p->izq);
+	else if(dato > p->dato) 
 		p->der = insertar(dato,p->der);
-		if(fe(p->der) - fe(p->izq) == 2) 
-			if(dato > p->der->dato)
-				p = rot_der(p);
-		else 
-			p = rot_dob_der(p);
-	}
-	p->fe = max(fe(p->izq),fe(p->der)) + 1;
-	return(p);	
+	else
+		return(p);
+	p->fe = 1 + max(fe(p->izq), fe(p->der));
+	int balance = getBalance(p);
+	if (balance > 1 && dato < p->izq->dato) 
+        return rot_izq(p); 
+    if (balance > 1 && dato > p->der->dato) 
+        return rot_der(p);
+    if (balance > 1 && dato > p->izq->dato) 
+        return rot_dob_izq(p); 
+    if (balance > 1 && dato < p->der->dato) 
+        return rot_dob_der(p);
+	return p;
 }
-
 
 /* Recorre y muestra todos los nodos*/
 void ver(int nivel,AVL *p) {
@@ -121,13 +126,6 @@ void ver(int nivel,AVL *p) {
 		printf("%d",p->dato);
 		ver(nivel + 1,p->izq);
 	}
-}
-
-/*Devuelve el factor de equilibrio*/
-int getBalance(AVL *p) {
-	if(!p)
-		return 0;
-	return fe(p->izq) - fe(p->der);
 }
 
 /*Devuelve el nodo con el dato menor del árbol*/
@@ -147,7 +145,7 @@ AVL *deleteNode(int key, AVL *p){
 	else if(key > p->dato)
 		p->der = deleteNode(key, p->der);
 	else {
-		if((!(p->izq)) || (!(p->der))) {
+		if(!(p->izq) || !(p->der)) {
 			AVL *temp = p->izq ? p->izq : p->der;
 			if (!temp) { 
 				temp = p; 
@@ -179,7 +177,7 @@ AVL *deleteNode(int key, AVL *p){
 /* Programa principal*/
 void main() {
 	int n,i,dato,op;
-	AVL *p = NULL,*q;
+	AVL *p = NULL,*q = NULL;
 	while(1){
 		printf("\n\tOperaciones con Árboles AVL\n\n"); 
 		printf("1. Llenar un árbol de forma aleatoria\n"); 
@@ -216,7 +214,7 @@ void main() {
 				printf("\n\tDato a Buscar: "); 
 				scanf("%d",&dato);
 				q = buscar(dato,p);
-				if(q != NULL) 
+				if(q) 
 					printf("Se encontró el dato %d",dato); 
 				else 
 					printf("No se encontró el dato %d",dato); 
@@ -238,7 +236,10 @@ void main() {
 					printf("No se encontró el dato %d",dato); 
 				break;
 			case 7:
-				borrar_AVL(p); /* Borra el árbol */ 
+				borrar_AVL(p);
+				borrar_AVL(q);
+				free(q);
+				free(p);
 				exit(0);
 				break;
 			default:
@@ -247,5 +248,7 @@ void main() {
 		}
 	}
 	borrar_AVL(p);
+	borrar_AVL(q);
 	free(p);
+	free(q);
 }

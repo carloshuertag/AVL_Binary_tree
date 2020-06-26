@@ -34,15 +34,15 @@ AVL *buscar(int dato, AVL *p) {
 	else if(dato > p -> dato) 
 		return(buscar(dato, p->der)); 
 	else 
-		return(p);
+		return p;
 }
 
 /* Calcula la altura del árbol (factor de equilibrio)*/
 int fe(AVL *p){
 	if(p == NULL) 
-		return(-1); 
+		return(0); 
 	else 
-		return(p->fe); 
+		return p->fe; 
 }
 
 /* Rotación simple a la izquierda*/
@@ -53,7 +53,7 @@ AVL *rot_izq(AVL *p) {
 	q->der = p;
 	p->fe = max(fe(p->izq), fe(p->der)) + 1;
 	q->fe = max(fe(q->izq), p->fe) + 1;
-	return(q); /* Nueva Raíz */ 
+	return q; /* Nueva Raíz */ 
 }
 
 /* Rotación simple a la derecha */
@@ -64,19 +64,19 @@ AVL *rot_der(AVL *q){
 	p->izq = q;
 	q->fe = max(fe(q->izq),fe(q->der)) + 1;
 	p->fe = max(fe(p->der),q->fe) + 1;
-	return(p); /* Nueva raíz*/
+	return p; /* Nueva raíz*/
 }
 
 /* Rotación doble a la izquierda*/
 AVL *rot_dob_izq(AVL *k) {
 	k->izq = rot_der(k->izq);
-	return(rot_izq(k));
+	return rot_izq(k);
 }
 
 /* Rotación doble a la derecha*/
 AVL *rot_dob_der(AVL *q) {
 	q->der = rot_izq(q->der); 
-	return(rot_der(q));
+	return rot_der(q);
 }
 
 
@@ -133,7 +133,7 @@ int getBalance(AVL *p) {
 /*Devuelve el nodo con el dato menor del árbol*/
 AVL * minValueNode(AVL *p) { 
     AVL* current = p; 
-    while (p->izq != NULL) 
+    while (p->izq) 
         current = current->izq; 
     return current; 
 } 
@@ -166,17 +166,13 @@ AVL *deleteNode(int key, AVL *p){
 	p->fe = 1 + max(fe(p->izq), fe(p->der));
 	int balance = getBalance(p);
 	if (balance > 1 && getBalance(p->izq) >= 0) 
-        return rot_der(p); 
-    if (balance > 1 && getBalance(p->izq) < 0) { 
-        p->izq =  rot_izq(p->izq); 
-        return rot_der(p); 
-    } 
-    if (balance < -1 && getBalance(p->der) <= 0) 
-        return rot_izq(p);
-    if (balance < -1 && getBalance(p->der) > 0) { 
-        p->der = rot_der(p->der); 
         return rot_izq(p); 
-    }
+    if (balance > 1 && getBalance(p->izq) < 0) 
+        return rot_dob_izq(p);
+    if (balance < -1 && getBalance(p->der) <= 0) 
+        return rot_der(p);
+    if (balance < -1 && getBalance(p->der) > 0)
+        return rot_dob_der(p); 
 	return p;
 }
 
@@ -251,9 +247,5 @@ void main() {
 		}
 	}
 	borrar_AVL(p);
+	free(p);
 }
-
-
-
-
-

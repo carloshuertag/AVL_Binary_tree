@@ -1,185 +1,173 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <time.h>
-#define max(a,b) (((a) > (b)) ? (a) : (b))
 
-typedef struct nodo {
-	int dato;
-	int fe; 		//factor de equilibrio
-	struct nodo *izq, *der; }
-AVL;
+typedef struct Node {
+	int key, height;
+	struct Node *left, *right; 
+} Node;
 
-/* Cuenta el número de nodos en el árbol */
-int cuenta_nodos(AVL *p) {
-	if(!p)
+int Max(int a, int b){
+	return (a > b) ? a : b;
+}
+
+int nodesCount(Node *root) {
+	if(!root)
 		return(0);
-	return(cuenta_nodos(p->izq) + 1 + cuenta_nodos(p->der)); 
+	return(nodesCount(root->left) + 1 + nodesCount(root->right)); 
 }
 
-/* Borra todo el árbol AVL*/
-void borrar_AVL(AVL *p) {
-	if(p) {
-		borrar_AVL(p->izq);
-		borrar_AVL(p->der);
-		free(p);
+void deleteTree(Node *root) {
+	if(root) {
+		deleteTree(root->left);
+		deleteTree(root->right);
+		free(root);
 	}
 }
 
-/* Busca un dato en el árbol*/
-AVL *buscar(int dato, AVL *p) {
-	if(!p) 
-		return p;
-	if(dato < p->dato) 
-		return(buscar(dato, p->izq)); 
-	else if(dato > p -> dato) 
-		return(buscar(dato, p->der)); 
+Node *searchKey(Node *root, int key) {
+	if(!root) 
+		return root;
+	if(key < root->key) 
+		return(searchKey(root->left, key)); 
+	else if(key > root->key) 
+		return(searchKey(root->right, key)); 
 	else 
-		return p;
+		return root;
 }
 
-/* Calcula la altura del árbol (factor de equilibrio)*/
-int fe(AVL *p){
-	if(!p) 
+int height(Node *node){
+	if(!node) 
 		return(0); 
-	else 
-		return p->fe; 
+	return node->height; 
 }
 
-/*Devuelve el factor de equilibrio*/
-int getBalance(AVL *p) {
-	if(!p)
+int getBalance(Node *node) {
+	if(!node)
 		return 0;
-	return fe(p->izq) - fe(p->der);
+	return height(node->left) - height(node->right);
 }
 
-/* Rotación simple a la izquierda*/
-AVL *rot_izq(AVL *p) {
-	AVL *q;
-	q = p->izq;
-	p->izq = q->der;
-	q->der = p;
-	p->fe = max(fe(p->izq), fe(p->der)) + 1;
-	q->fe = max(fe(q->izq), fe(q->der)) + 1;
-	return q; /* Nueva Raíz */ 
+Node *rightRotation(Node *node) {
+	Node *aux = node->left;
+	node->left = aux->right;
+	aux->right = node;
+	node->height = Max(height(node->left), height(node->right)) + 1;
+	aux->height = Max(height(aux->left), height(aux->right)) + 1;
+	return aux; 
 }
 
-/* Rotación simple a la derecha */
-AVL *rot_der(AVL *q){
-	AVL *p;
-	p = q->der;
-	q->der = p->izq;
-	p->izq = q;
-	q->fe = max(fe(q->izq),fe(q->der)) + 1;
-	p->fe = max(fe(p->izq),fe(p->der)) + 1;
-	return p; /* Nueva raíz*/
+Node *leftRotation(Node *node){
+	Node *aux = node->right;
+	node->right = aux->left;
+	aux->left = node;
+	node->height = Max(height(node->left), height(node->right)) + 1;
+	aux->height = Max(height(aux->left), height(aux->right)) + 1;
+	return aux;
 }
 
-/* Rotación doble a la izquierda*/
-AVL *rot_dob_izq(AVL *k) {
-	k->izq = rot_der(k->izq);
-	return rot_izq(k);
+Node *doubleRightRotation(Node *node) {
+	node->left = leftRotation(node->left);
+	return rightRotation(node);
 }
 
-/* Rotación doble a la derecha*/
-AVL *rot_dob_der(AVL *q) {
-	q->der = rot_izq(q->der); 
-	return rot_der(q);
+Node *doubleLeftRotation(Node *node) {
+	node->right = rightRotation(node->right); 
+	return leftRotation(node);
 }
 
-/* Inserta un dato en el árbol p*/
-AVL *insertar(int dato, AVL *p) {
-	if(!p) {
-		p = (AVL *)malloc(sizeof(AVL));
-		p->dato = dato;
-		p->fe = 1;
-		p->izq = NULL;
-		p->der = NULL;
-		return p;
+Node *insertNode(Node *root, int key) {
+	if(!root) {
+		root = (Node *)malloc(sizeof(Node));
+		root->key = key;
+		root->height = 1;
+		root->left = NULL;
+		root->right = NULL;
+		return root;
 	}
-	if(dato < p->dato) 
-		p->izq = insertar(dato, p->izq);
-	else if(dato > p->dato) 
-		p->der = insertar(dato,p->der);
+	if(key < root->key) 
+		root->left = insertNode(root->left, key);
+	else if(key > root->key) 
+		root->right = insertNode(root->right, key);
 	else
-		return(p);
-	p->fe = 1 + max(fe(p->izq), fe(p->der));
-	int balance = getBalance(p);
-	if (balance > 1 && dato < p->izq->dato) 
-        return rot_izq(p); 
-    if (balance > 1 && dato > p->der->dato) 
-        return rot_der(p);
-    if (balance > 1 && dato > p->izq->dato) 
-        return rot_dob_izq(p); 
-    if (balance > 1 && dato < p->der->dato) 
-        return rot_dob_der(p);
-	return p;
+		return root;
+	root->height = 1 + Max(height(root->left), height(root->right));
+	int balance = getBalance(root);
+	if (balance > 1 && key < root->left->key) 
+        return rightRotation(root); 
+    if (balance > 1 && key > root->right->key) 
+        return leftRotation(root);
+    if (balance > 1 && key > root->left->key) 
+        return doubleRightRotation(root); 
+    if (balance > 1 && key < root->right->key) 
+        return doubleLeftRotation(root);
+	return root;
 }
 
-/* Recorre y muestra todos los nodos*/
-void ver(int nivel,AVL *p) {
-	int i;
-	if(p != NULL) {
-		ver(nivel + 1,p->der);
+void displayTree(Node *root, int level) {
+	if(root) {
+		int i;
+		displayTree(root->right, level + 1);
 		printf("\n\n");
-		for(i = 0;i < nivel;i++) 
+		for(i = 0; i < level; i++) 
 			printf("\t");
-		printf("%d",p->dato);
-		ver(nivel + 1,p->izq);
+		printf("%d",root->key);
+		displayTree(root->left, level + 1);
 	}
 }
 
 /*Devuelve el nodo con el dato menor del árbol*/
-AVL * minValueNode(AVL *p) { 
-    AVL* current = p; 
-    while (p->izq) 
-        current = current->izq; 
-    return current; 
+Node * minValueNode(Node *root) { 
+    Node* min = root; 
+    while (root->left) 
+        min = min->left; 
+    return min; 
 } 
 
-/*Borra el nodo con el dato dado del árbol*/
-AVL *deleteNode(int key, AVL *p){
-	if(!p)
-		return p;
-	if(key < p->dato) 
-        p->izq = deleteNode(key, p->izq);
-	else if(key > p->dato)
-		p->der = deleteNode(key, p->der);
-	else {
-		if(!(p->izq) || !(p->der)) {
-			AVL *temp = p->izq ? p->izq : p->der;
-			if (!temp) { 
-				temp = p; 
-				p = NULL; 
-			} else 
-				*p = *temp;
-			free(temp); 
-		} else {
-			AVL *temp = minValueNode(p->der); 
-			p->dato = temp->dato; 
-			p->der = deleteNode(temp->dato, p->der); 
-		}
-	}
-	if(!p)
-		return p;
-	p->fe = 1 + max(fe(p->izq), fe(p->der));
-	int balance = getBalance(p);
-	if (balance > 1 && getBalance(p->izq) >= 0) 
-        return rot_izq(p); 
-    if (balance > 1 && getBalance(p->izq) < 0) 
-        return rot_dob_izq(p);
-    if (balance < -1 && getBalance(p->der) <= 0) 
-        return rot_der(p);
-    if (balance < -1 && getBalance(p->der) > 0)
-        return rot_dob_der(p); 
-	return p;
-}
+Node* deleteNode(Node *root, int key) { 
+    if (!root) 
+        return root;  
+    if (key < root->key ) 
+        root->left = deleteNode(root->left, key); 
+    else if(key > root->key ) 
+        root->right = deleteNode(root->right, key); 
+    else {
+		Node *tmp = NULL;
+        if( (!root->left) || (!root->right) ) { 
+            tmp = root->left ? root->left : root->right; 
+            if (!tmp) { 
+                tmp = root; 
+                root = NULL; 
+            } 
+            else
+            	*root = *tmp;
+            free(tmp); 
+        } else { 
+            tmp = minValueNode(root->right); 
+            root->key = tmp->key; 
+            root->right = deleteNode(root->right, tmp->key); 
+        } 
+    }
+    if (!root)
+      	return root;
+    root->height = 1 + Max(height(root->left), height(root->right));
+    int balance = getBalance(root); 
+    if (balance > 1 && getBalance(root->left) >= 0) 
+        return rightRotation(root); 
+    if (balance > 1 && getBalance(root->left) < 0) 
+		return doubleRightRotation(root);
+    if (balance < -1 && getBalance(root->right) <= 0) 
+        return leftRotation(root);
+    if (balance < -1 && getBalance(root->right) > 0) 
+		return doubleLeftRotation(root);
+    return root; 
+} 
 
-/* Programa principal*/
 void main() {
-	int n,i,dato,op;
-	AVL *p = NULL,*q = NULL;
+	int n, i, key, op;
+	Node *root = NULL, *result = NULL;
 	while(1){
-		printf("\n\tOperaciones con Árboles AVL\n\n"); 
+		printf("\n\n\tOperaciones con Árboles AVL\n\n"); 
 		printf("1. Llenar un árbol de forma aleatoria\n"); 
 		printf("2. Llenar un árbol de forma manual\n"); 
 		printf("3. Buscar un dato\n");
@@ -194,52 +182,53 @@ void main() {
 				printf("Numero de nodos del árbol: "); 
 				scanf("%d",&n);
 				srand(time(NULL));
-				for(i = 0;i < n;i++) {
+				for(i = 0; i < n; i++) {
 					printf("\n\tElemento No. %d: ",i + 1);
-					dato = rand()/100000000; 
-					printf("%d",dato);
-					p = insertar(dato,p);
+					key = rand()/100000000; 
+					printf("%d", key);
+					root = insertNode(root, key);
 				} 
 				break;
 			case 2:
 				printf("Numero de nodos del árbol: "); 
 				scanf("%d",&n);
-				for(i = 0;i < n;i++) {
+				for(i = 0; i < n; i++) {
 					printf("\n\tElemento No. %d: ",i+1);
-					scanf("%d",&dato);
-					p = insertar(dato,p);
+					scanf("%d", &key);
+					root = insertNode(root, key);
 				}
             	break;
 			case 3:
 				printf("\n\tDato a Buscar: "); 
-				scanf("%d",&dato);
-				q = buscar(dato,p);
-				if(q) 
-					printf("Se encontró el dato %d",dato); 
+				scanf("%d", &key);
+				result = searchKey(root, key);
+				if(result) 
+					printf("Se encontró el dato %d", key); 
 				else 
-					printf("No se encontró el dato %d",dato); 
+					printf("No se encontró el dato %d", key); 
 				break;
 			case 4:
-				printf("\n\n\tNodos : %d\n\n\tAltura =%d",cuenta_nodos(p),fe(p)); 
+				printf("\n\n\tNodos : %d\n\n\tAltura =%d", nodesCount(root), height(root)); 
 				break;
       		case 5:
       			printf("Árbol AVL"); 
-      			ver(0,p);
+      			displayTree(root, 0);
       			break;
 			case 6:
 				printf("\n\tDato a borrar: "); 
-				scanf("%d",&dato);
-				q = deleteNode(dato, p);
-				if(q)
-					printf("Se borró el dato %d",dato); 
-				else
-					printf("No se encontró el dato %d",dato); 
+				scanf("%d", &key);
+				result = searchKey(root, key);
+				if(result){
+					root = deleteNode(root, key);
+					printf("Se borró el dato %d", key); 
+				} else
+					printf("No se encontró el dato %d", key); 
 				break;
 			case 7:
-				borrar_AVL(p);
-				borrar_AVL(q);
-				free(q);
-				free(p);
+				deleteTree(root);
+				deleteTree(result);
+				free(root);
+				free(result);
 				exit(0);
 				break;
 			default:
@@ -247,8 +236,8 @@ void main() {
 				break;
 		}
 	}
-	borrar_AVL(p);
-	borrar_AVL(q);
-	free(p);
-	free(q);
+	deleteTree(root);
+	deleteTree(result);
+	free(root);
+	free(result);
 }

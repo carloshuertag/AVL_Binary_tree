@@ -235,9 +235,11 @@ void main() {
 			case 6:
 				printf("\n\tDato a borrar: "); 
 				scanf("%d",&dato);
-				q = deleteNode(dato, p);
-				if(q)
-					printf("Se borró el dato %d",dato); 
+				q = buscar(dato,p);
+				if(q){
+					p = deleteNode(dato, p);
+					printf("Se borró el dato %d",dato);
+				}
 				else
 					printf("No se encontró el dato %d",dato); 
 				break;
@@ -252,8 +254,3 @@ void main() {
 	}
 	borrar_AVL(p);
 }
-
-
-
-
-
